@@ -11,7 +11,7 @@ app.use(express.static('public'));
 // Use environment variable for MongoDB connection string
 const mongoURI = process.env.MONGO_URI;
 
-mongoose.connect(mongoURI)
+mongoose.connect('mongodb://localhost:27017/nomcomboDB')
   .then(() => console.log('MongoDB connected...'))
   .catch(err => console.log(err));
 
