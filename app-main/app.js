@@ -1,11 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
 
 const app = express();
-app.use(bodyParser.json());
-app.use(express.static('views'));
 
+// Middleware
+app.use(express.json()); // بديل body-parser
+app.use(express.static('views')); // لو عندك frontend HTML داخل مجلد views
+
+// Connect to MongoDB
 mongoose.connect('mongodb://mongo:27017/nomcomboDB')
     .then(() => console.log("Connected to MongoDB"))
     .catch((error) => console.error("MongoDB connection error:", error));
@@ -40,25 +42,27 @@ function generateRandomCombos(length, count) {
 app.post('/generate', async (req, res) => {
     const { username, length, count } = req.body;
 
-    // Generate new combinations
+    if (!username || !length || !count) {
+        return res.status(400).json({ message: "username, length, and count are required" });
+    }
+
     const newCombinations = generateRandomCombos(length, count);
 
     try {
-        // Find the user's record
         let userCombo = await Combo.findOne({ username });
 
         if (userCombo) {
-            // User exists, update their record by adding new combinations
+            // Update existing user
             await Combo.updateOne(
                 { username },
                 { 
                     $push: { combinations: { $each: newCombinations } },
-                    $set: { length, count } // Update length and count to the latest values
+                    $set: { length, count }
                 }
             );
             res.json({ message: "Combinations updated successfully!" });
         } else {
-            // User does not exist, create a new record
+            // Create new user
             const newCombo = new Combo({ username, length, count, combinations: newCombinations });
             await newCombo.save();
             res.json({ message: "Combinations generated and saved successfully!" });
@@ -69,5 +73,11 @@ app.post('/generate', async (req, res) => {
     }
 });
 
+// Route to test server is running
+app.get('/', (req, res) => {
+    res.send("NomCombo API is running");
+});
+
+// Start server
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
